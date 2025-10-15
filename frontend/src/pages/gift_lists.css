@@ -1,0 +1,316 @@
+.container {
+    min-height: 100vh;
+    max-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.gift-lists {
+    flex: 1;
+    overflow-y: auto;
+    max-height: calc(100vh - 200px);
+    width: 100%;
+}
+
+.gift-list {
+    background: none !important;
+}
+
+.gift-list-content {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.title-popup {
+    display: none; /* Hidden by default */
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    height: 25%;
+    width: 70%;
+    background-color: white;
+    border: 1px solid #ccc;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+    padding: 20px;
+    text-align: center;
+}
+
+.pop-up-close-btn {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    color: #333;
+    background-color: transparent;
+    border: none;
+    font-size: 1.2em;
+    cursor: pointer;
+    padding: 5px;
+    line-height: 1;
+}
+
+.pop-up-close-btn:hover {
+    color: #000;
+}
+
+.title-popup-content {
+    cursor: pointer;
+}
+
+
+.gift-title {
+    flex: 1;
+    font-weight: 500;
+    font-size: 1.1em;
+    padding: 0 8px;
+    cursor: pointer;
+    border-radius: 3px;
+    transition: background-color 0.3s ease;
+}
+
+
+
+.gift-creator {
+    /* Always visible */
+    visibility: visible;
+    opacity: 1;
+    display: inline;
+    color: #888;
+    margin-left: 8px;
+    font-size: 0.8em;
+}
+
+.gift-actions {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+
+
+.delete-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 10px;
+}
+
+.delete-icon i {
+    font-size: 2em;
+}
+
+.thumbs-up, .thumbs-down {
+    border: none;
+    margin: 5px;
+}
+
+
+/* Person Tabs */
+.person-tabs-scroll {
+    overflow-x: auto;
+    white-space: nowrap;
+    width: 100%;
+    padding-bottom: 4px;
+}
+
+.person-tabs-inner {
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+    min-width: max-content;
+}
+
+.person-tab {
+    padding: 10px 20px;
+    border: 2px solid #c00;
+    background-color: white;
+    color: var(--christmasred);
+    cursor: pointer;
+    border-radius: 5px;
+    font-weight: bold;
+    transition: all 0.3s ease;
+    min-width: 120px;
+    display: inline-block;
+    margin-right: 0;
+}
+
+.person-tab.active {
+    background-color: var(--christmasred);
+    color: white;
+    border: 2px solid var(--christmasred);
+}
+
+.person-tab:not(.active) {
+    background-color: white;
+    color: var(--christmasred);
+    border: 2px solid var(--christmasred);
+}
+
+/* Gold tab styling */
+.person-tab.gold-tab {
+    border: 2px solid var(--christmasgold);
+    color: var(--christmasgold);
+    background-color: white;
+}
+
+.person-tab.gold-active {
+    background-color: var(--christmasgold);
+    color: white;
+    border: 2px solid var(--christmasgold);
+}
+
+.gift-list-item {
+    width: 100%;
+    background: none;
+    border: none;
+    padding: 0;
+    margin: 0;
+}
+
+/* Two-column layout for gift item */
+.gift-list-box {
+    align-items: start;
+    padding: 6px 8px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+}
+
+/* Add Idea Button and Popup */
+.add-idea-container {
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.neue-idee-button {
+    color: var(--christmasgreen);
+    border: 2px solid var(--christmasgreen);
+    background-color: white;
+    border-radius: 8px;
+    padding: 12px 24px;
+    font-size: 1.1em;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.neue-idee-button i {
+    font-size: 1.2em;
+    color: var(--christmasgreen);
+}
+
+.neue-idee-button:hover {
+    background-color: var(--christmasred);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.add-idea-popup {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+}
+
+.popup-content {
+    background-color: white;
+    border-radius: 12px;
+    padding: 30px;
+    max-width: 500px;
+    width: 90%;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+}
+
+.popup-content h3 {
+    margin-bottom: 20px;
+    text-align: center;
+    color: var(--darkprimary);
+    font-size: 1.5em;
+}
+
+.input-group {
+    margin-bottom: 20px;
+}
+
+.input-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: bold;
+    color: var(--darkprimary);
+}
+
+.input-group input {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid #ddd;
+    border-radius: 6px;
+    font-size: 1em;
+    transition: border-color 0.3s ease;
+}
+
+.input-group input:focus {
+    outline: none;
+    border-color: var(--christmasgold);
+}
+
+.popup-buttons {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    margin-top: 25px;
+}
+
+.fertig-button, .abbrechen-button {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 6px;
+    font-size: 1em;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-width: 100px;
+}
+
+.fertig-button {
+    background-color: var(--christmasgreen);
+    color: white;
+}
+
+.abbrechen-button {
+    background-color: var(--christmasred);
+    color: white;
+}
+
+
+/* Alternating border colors for gift items */
+.gift-list-content .gift-list-item:nth-child(odd) .gift-list-box {
+    border-color: var(--christmasred);
+}
+.gift-list-content .gift-list-item:nth-child(even) .gift-list-box {
+    border-color: var(--christmasgreen);
+}
+
+/* Slightly stronger shadow for the colored borders */
+.gift-list-content .gift-list-item .gift-list-box {
+    box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+    transition: border-color 200ms ease, box-shadow 200ms ease, transform 120ms ease;
+}
+.gift-list-content .gift-list-item:hover .gift-list-box {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+}

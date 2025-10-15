@@ -1,0 +1,164 @@
+# Script to initialize the database and add the admin user
+import datetime
+
+from backend.db import User, get_db, Base, DATABASE_URL, SecretSantaPair
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+import os
+
+engine = create_engine(DATABASE_URL)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+# Create tables if they do not exist
+Base.metadata.create_all(bind=engine)
+
+
+# Add admin user if not present
+def add_admin():
+    db = SessionLocal()
+    admin = db.query(User).filter_by(name="admin").first()
+    if not admin:
+        admin = User(name="admin", token="admin")
+        db.add(admin)
+        db.commit()
+        print("Admin user created.")
+    else:
+        print("Admin user already exists.")
+    db.close()
+
+
+def add_dummy_user():
+    users = [
+        "max",
+        "anka",
+        "mama",
+        "papa",
+        "katharina",
+        "christoph"
+    ]
+    db = SessionLocal()
+    for username in users:
+        user = db.query(User).filter_by(name=username).first()
+        if not user:
+            user = User(name=username, token=username)
+            db.add(user)
+            print(f"User '{username}' created.")
+        else:
+            print(f"User '{username}' already exists.")
+    db.commit()
+    db.close()
+
+
+def add_pairing():
+    # create 3 pairs out of the 6 users
+    db = SessionLocal()
+    users = db.query(User).filter(User.name != "admin").all()
+    pairs = [
+        (users[0], users[1]),
+        (users[2], users[3]),
+        (users[4], users[5]),
+    ]
+    year = datetime.datetime.now().year
+    for giver, receiver in pairs:
+        existing_pair = db.query(SecretSantaPair).filter_by(giver_id=giver.id, year=year).first()
+        if not existing_pair:
+            pair = SecretSantaPair(giver_id=giver.id, receiver_id=receiver.id, year=year)
+            db.add(pair)
+            print(f"Pair ({giver.name} -> {receiver.name}) created.")
+        else:
+            print(f"Pair for giver '{giver.name}' already exists.")
+
+        # other way around
+        existing_pair = db.query(SecretSantaPair).filter_by(giver_id=receiver.id, year=year).first()
+        if not existing_pair:
+            pair = SecretSantaPair(giver_id=receiver.id, receiver_id=giver.id, year=year)
+            db.add(pair)
+            print(f"Pair ({receiver.name} -> {giver.name}) created.")
+        else:
+            print(f"Pair for giver '{receiver.name}' already exists.")
+    db.commit()
+    db.close()
+
+
+def init_gifts():
+    from backend.gifts import Gift
+    db = SessionLocal()
+    gifts = [
+        {
+            "title": "Lego Set",
+            "description": "A cool Lego set for building fun.",
+            "links": "https://www.lego.com/en-us/product/lego-city-police-station-60246",
+            "created_by_name": "max",
+            "created_for_name": "anka"
+        },
+        {
+            "title": "Cookbook",
+            "description": "A cookbook with delicious recipes.",
+            "links": "https://www.amazon.com/dp/198482218X",
+            "created_by_name": "anka",
+            "created_for_name": "max"
+        },
+        {
+            "title": "Board Game",
+            "description": "A fun board game for family nights.",
+            "links": "https://www.amazon.com/dp/B00J4E8KX2",
+            "created_by_name": "mama",
+            "created_for_name": "papa"
+        },
+        {
+            "title": "Wireless Headphones",
+            "description": "Noise-cancelling wireless headphones.",
+            "links": "https://www.amazon.com/dp/B07Y2ZQ3M3",
+            "created_by_name": "papa",
+            "created_for_name": "mama"
+        },
+        {
+            "title": "Yoga Mat",
+            "description": "A comfortable yoga mat for daily practice.",
+            "links": "https://www.amazon.com/dp/B01N6S4A2M",
+            "created_by_name": "katharina",
+            "created_for_name": "christoph"
+        },
+        {
+            "title": "Travel Mug",
+            "description": "A stainless steel travel mug.",
+            "links": "https://www.amazon.com/dp/B01N5IB20Q",
+            "created_by_name": "christoph",
+            "created_for_name": "katharina"
+        }
+    ]
+    year = datetime.datetime.now().year
+    for gift_data in gifts:
+        created_by = db.query(User).filter_by(name=gift_data["created_by_name"]).first()
+        created_for = db.query(User).filter_by(name=gift_data["created_for_name"]).first()
+        if created_by and created_for:
+            existing_gift = db.query(Gift).filter_by(
+                title=gift_data["title"],
+                created_by_id=created_by.id,
+                created_for_id=created_for.id,
+                year=year
+            ).first()
+            if not existing_gift:
+                gift = Gift(
+                    title=gift_data["title"],
+                    description=gift_data["description"],
+                    links=gift_data["links"],
+                    created_by_id=created_by.id,
+                    created_for_id=created_for.id,
+                    year=year
+                )
+                db.add(gift)
+                print(
+                    f"Gift '{gift_data['title']}' from '{gift_data['created_by_name']}' to '{gift_data['created_for_name']}' created.")
+            else:
+                print(
+                    f"Gift '{gift_data['title']}' from '{gift_data['created_by_name']}' to '{gift_data['created_for_name']}' already exists.")
+    db.commit()
+    db.close()
+
+
+if __name__ == "__main__":
+    add_admin()
+    add_dummy_user()
+    add_pairing()
+    init_gifts()

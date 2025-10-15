@@ -1,0 +1,11 @@
+[project]
+name = "secretsanta-backend"
+version = "0.1.0"
+description = "FastAPI backend for Secret Santa webapp"
+authors = [{ name = "Max", email = "max.vknobloch@gmail.com" }]
+requires-python = ">=3.13"
+dependencies = [
+    "fastapi>=0.110.0",
+    "sqlalchemy>=2.0.0",
+    "uvicorn>=0.29.0"
+]

@@ -1,0 +1,67 @@
+/* Adapted from old index.css */
+.container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 80vh;
+    padding: 20px;
+}
+
+.static-card {
+    background-color: #f5f6fa;
+    border-radius: 15px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+    padding: 40px;
+    text-align: center;
+    max-width: 500px;
+    width: 100%;
+    margin: 20px;
+    border: 3px solid var(--christmasgold);
+}
+
+.card-slogan {
+    margin-bottom: 30px;
+}
+
+.card-text {
+    font-size: 1.8em;
+    font-weight: bold;
+    color: #333;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+    margin: 0;
+    line-height: 1.3;
+}
+
+.card-receiver {
+    margin-bottom: 30px;
+    padding: 20px;
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    backdrop-filter: blur(10px);
+}
+
+.receiver-name {
+    font-size: 2.2em;
+}
+
+.card-button-container {
+    margin-top: 20px;
+}
+
+.weiter-button {
+    font-size: 1.2em;
+    padding: 12px 32px;
+    border-radius: 8px;
+    background-color: #009688;
+    color: white;
+    border: none;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background 0.2s;
+}
+
+.weiter-button:hover,
+.weiter-button:focus {
+    background-color: #00796b;
+    outline: none;
+}

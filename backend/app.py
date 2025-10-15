@@ -1,0 +1,309 @@
+# FastAPI endpoints for Secret Santa
+import datetime
+import logging
+import random
+
+from fastapi import FastAPI, Depends, HTTPException, Request
+from sqlalchemy.orm import Session
+from starlette.responses import HTMLResponse
+from fastapi.responses import JSONResponse
+
+from backend.auth import token_cookie_guard
+from backend.db import get_db, User, SecretSantaPair, Gift, Vote
+from backend.gifts import get_receiver, get_gift_list, GiftOut, UserGiftList, get_own_gift_list
+from pydantic import BaseModel
+from typing import List
+from pathlib import Path
+
+app = FastAPI()
+
+# set loglevel to info
+logging.basicConfig(level=logging.INFO)
+
+base_dir = Path(__file__).parent.parent
+
+@app.middleware("http")
+async def middleware_wrapper(request: Request, call_next):
+    return await token_cookie_guard(request, call_next, admin_only=True, protected_route_prefixes=None)
+
+
+@app.get("/api/healthcheck")
+def read_root():
+    return {"message": "Welcome to Secret Santa API"}
+
+@app.get("/api/auth")
+def check_auth(request: Request, db: Session = Depends(get_db)):
+    user = get_current_db_user(request, db)
+    logging.info(f"Authenticated user: {user.name}")
+    return JSONResponse(content={"username": user.name})
+
+def get_current_db_user(request: Request, db: Session) -> User:
+    """
+    Returns the SQLAlchemy User object for the authenticated user in request.state.user.
+    Raises HTTPException(401) if not found or not authenticated.
+    """
+    username = getattr(request.state, "user", None)
+    if not username:
+        raise HTTPException(status_code=401, detail="User not authenticated")
+    user = db.query(User).filter_by(name=username).first()
+    if not user:
+        raise HTTPException(status_code=401, detail="User not found in database")
+    return user
+
+
+@app.get("/api/welcome", response_class=HTMLResponse)
+async def welcome(request: Request, db: Session = Depends(get_db)):
+    user_obj = get_current_db_user(request, db)
+    username = user_obj.name
+    return f"<h1>Welcome to Secret Santa, {username}!</h1><p>This is the home page.</p>"
+
+
+@app.get("/api/users", response_model=List[str])
+def list_users(db: Session = Depends(get_db)):
+    users = db.query(User).all()
+    return [u.name for u in users]
+
+
+@app.get("/api/gift-lists", response_model=List[UserGiftList])
+def get_gift_lists_for_current_year(request: Request, db: Session = Depends(get_db)):
+    user = get_current_db_user(request, db)
+    logging.info(f"Fetching gift lists for user: {user.name}")
+    current_year = datetime.datetime.now().year
+
+    receiver = get_receiver(user, db, current_year)
+    gift_receiver_name = receiver.name if receiver else "?"
+
+    result = [get_own_gift_list(user, db, current_year)]
+
+    # get all users except admin
+    other_users = db.query(User).filter(User.name != "admin").all()
+    for other_user in sorted(other_users, key=lambda u: u.name):
+        gift_list = get_gift_list(other_user, db, current_year)
+
+        if other_user.name == gift_receiver_name:
+            result.insert(0, gift_list)
+        else:
+            result.append(gift_list)
+    return result
+
+
+# --- Helper and Pydantic models ---
+class GiftCreate(BaseModel):
+    created_for: str  # username instead of id
+    title: str
+    description: str = ""
+    links: str = ""
+
+
+class GiftOut(BaseModel):
+    id: int
+    title: str
+    description: str
+    links: str
+    created_by: str
+    created_for: str
+    created_at: str
+    vote_count: int
+
+
+class GiftUpdate(BaseModel):
+    link: str
+
+
+# --- Slogan endpoint ---
+@app.get("/api/slogan")
+def get_card_slogan():
+    slogans = [
+        "Deine Schnee-Schnuppe",
+        "Deine Lametta-Legende",
+        "Dein Rentier-Rockstar",
+        "Dein Glühwein-Guru",
+        "Dein Keks-König",
+        "Dein Zuckerstangen-Zauberer",
+        "Dein Frostbeulen-Fürst",
+        "Dein Tannenbaum-Tornado",
+        "Dein Plätzchen-Panther",
+        "Dein Kranz-Kaptiän"
+    ]
+    return {"slogan": random.choice(slogans) + ":"}
+
+
+# --- Get gift receiver for current user ---
+@app.get("/api/receiver")
+def get_gift_receiver(request: Request, db: Session = Depends(get_db)):
+    import logging
+    logging.info("/receiver endpoint called")
+    user_obj = get_current_db_user(request, db)
+    logging.info(f"Current user: {getattr(user_obj, 'name', None)}")
+    current_year = datetime.datetime.now().year
+    pair = db.query(SecretSantaPair).filter_by(giver_id=user_obj.id, year=current_year).first()
+    if pair:
+        receiver = db.query(User).filter_by(id=pair.receiver_id).first()
+        logging.info(f"Receiver found: {getattr(receiver, 'name', None)}")
+        return {"gift_receiver_name": receiver.name}
+    logging.info("No receiver found, returning '?'")
+    return {"gift_receiver_name": "?"}
+
+
+# --- Add gift ---
+@app.post("/api/gifts/add", response_model=GiftOut)
+def add_gift(gift: GiftCreate, request: Request, db: Session = Depends(get_db)):
+    user_obj = get_current_db_user(request, db)
+    created_for_user = db.query(User).filter_by(name=gift.created_for).first()
+    if not created_for_user:
+        raise HTTPException(status_code=404, detail="User not found")
+    new_gift = Gift(
+        title=gift.title,
+        description=gift.description,
+        links=gift.links,
+        year=datetime.datetime.now().year,
+        created_by=user_obj,
+        created_for=created_for_user
+    )
+    db.add(new_gift)
+    db.commit()
+    db.refresh(new_gift)
+    return GiftOut(
+        id=new_gift.id,
+        title=new_gift.title,
+        description=new_gift.description,
+        links=new_gift.links,
+        created_by=new_gift.created_by.name if new_gift.created_by else "",
+        created_for=new_gift.created_for.name if new_gift.created_for else "",
+        created_at=str(datetime.datetime.now()),
+        vote_count=0
+    )
+
+
+@app.patch("/api/gifts/{gift_id}", response_model=GiftOut)
+def update_gift(gift_id: int, update: GiftUpdate, request: Request, db: Session = Depends(get_db)):
+    user_obj = get_current_db_user(request, db)
+    gift = db.query(Gift).filter_by(id=gift_id).first()
+    if not gift:
+        raise HTTPException(status_code=404, detail="Gift not found")
+    if gift.created_by != user_obj:
+        raise HTTPException(status_code=403, detail="Not allowed")
+    if update.link and update.link.startswith(("http://", "https://")):
+        gift.links = update.link
+    else:
+        gift.links = ""
+    db.commit()
+    db.refresh(gift)
+    return GiftOut(
+        id=gift.id,
+        title=gift.title,
+        description=gift.description,
+        links=gift.links,
+        created_by=gift.created_by.name if gift.created_by else "",
+        created_for=gift.created_for.name if gift.created_for else "",
+        created_at=str(gift.year),
+        vote_count=0
+    )
+
+
+@app.delete("/api/gifts/{gift_id}")
+def delete_gift(gift_id: int, request: Request, db: Session = Depends(get_db)):
+    user_obj = get_current_db_user(request, db)
+    gift = db.query(Gift).filter_by(id=gift_id).first()
+    if not gift:
+        raise HTTPException(status_code=404, detail="Gift not found")
+    if gift.created_by != user_obj:
+        raise HTTPException(status_code=403, detail="Not allowed")
+    db.delete(gift)
+    db.commit()
+    return {"success": True}
+
+
+class VoteRequest(BaseModel):
+    vote_type: str
+
+
+@app.post("/api/gifts/{gift_id}/vote")
+def vote_gift(gift_id: int, vote: VoteRequest, request: Request, db: Session = Depends(get_db)):
+    user_obj = get_current_db_user(request, db)
+    gift = db.query(Gift).filter_by(id=gift_id).first()
+    if not gift:
+        raise HTTPException(status_code=404, detail="Gift not found")
+    vote_value = 1 if vote.vote_type == "up" else -1
+    current_vote = db.query(Vote).filter_by(gift=gift, user=user_obj).first()
+    if current_vote:
+        if current_vote.value == vote_value:
+            db.delete(current_vote)
+            db.commit()
+            user_vote = "inactive"
+        else:
+            current_vote.value = vote_value
+            db.commit()
+            user_vote = "up" if vote_value == 1 else "down"
+    else:
+        new_vote = Vote(gift=gift, user=user_obj, value=vote_value)
+        db.add(new_vote)
+        db.commit()
+        user_vote = "up" if vote_value == 1 else "down"
+    # Update vote count (sum all votes for this gift)
+    total_votes = db.query(Vote).filter_by(gift=gift).with_entities(Vote.value).all()
+    vote_count = sum(v[0] for v in total_votes)
+    return {"success": True, "vote_count": vote_count, "user_vote": user_vote}
+
+
+@app.get("/api/pairing")
+def pair_create_view(request: Request, db: Session = Depends(get_db)):
+    if not request.state.get("is_superuser", False):
+        raise HTTPException(status_code=403, detail="Forbidden")
+    groups = db.query(SecretSantaGroup).all()
+    group_info = {}
+    for group in groups:
+        members = db.query(User).join(GroupMember, GroupMember.user_id == User.id).filter(
+            GroupMember.group_id == group.id).all()
+        group_info[group.id] = {
+            "members": [u.name for u in members],
+            "name": group.name
+        }
+    return {"group_info": group_info}
+
+
+class PairingRequest(BaseModel):
+    user_non_matches: dict
+
+
+@app.post("/api/pairing/{group_id}")
+def create_new_pairs(group_id: int, pairing: PairingRequest, db: Session = Depends(get_db)):
+    if not is_superuser():
+        raise HTTPException(status_code=403, detail="Forbidden")
+    group = db.query(SecretSantaGroup).filter_by(id=group_id).first()
+    if not group:
+        raise HTTPException(status_code=404, detail="Group not found")
+    members = db.query(User).join(SecretSantaGroup.members).filter(SecretSantaGroup.id == group_id).all()
+    usernames = [u.name for u in members]
+    pairing_result = create_secret_santa_pairs(usernames, pairing.user_non_matches)
+    if pairing_result is None:
+        raise HTTPException(status_code=400, detail="Pairing failed")
+    db.query(SecretSantaPair).filter_by(group=group).delete()
+    for giver_name, receiver_name in pairing_result.items():
+        giver = db.query(User).filter_by(name=giver_name).first()
+        receiver = db.query(User).filter_by(name=receiver_name).first()
+        db.add(SecretSantaPair(giver=giver, receiver=receiver, group=group, year=datetime.datetime.now().year))
+    db.commit()
+    return {"success": True}
+
+
+def create_secret_santa_pairs(members: list, non_matches: dict):
+    # Simple random pairing, avoiding non-matches
+    import random
+    available = set(members)
+    pairs = {}
+    for giver in members:
+        possible = [r for r in available if r != giver and r not in non_matches.get(giver, [])]
+        if not possible:
+            return None
+        receiver = random.choice(possible)
+        pairs[giver] = receiver
+        available.remove(receiver)
+    return pairs
+
+
+@app.get("/{full_path:path}")
+async def spa_catch_all(full_path: str):
+    if not full_path.startswith("api/"):
+        return FileResponse(base_dir / "frontend" / "build" / "index.html")
+    raise HTTPException(status_code=404, detail="Not Found")
