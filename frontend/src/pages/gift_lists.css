@@ -314,3 +314,44 @@
     transform: translateY(-2px);
     box-shadow: 0 6px 18px rgba(0,0,0,0.12);
 }
+
+/* User Switch Bar */
+.user-switch-bar {
+  width: 100vw;
+  overflow: hidden;
+  margin-bottom: 16px;
+  position: relative;
+  touch-action: pan-x;
+}
+.user-switch-bar-inner {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  width: 100vw;
+}
+.user-switch-half {
+  width: 40vw;
+  text-align: center;
+  color: #aaa;
+  font-size: 1.1em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: 0.6;
+  position: relative;
+  z-index: 1;
+}
+.user-switch-center {
+  width: 40vw;
+  text-align: center;
+  font-size: 1.3em;
+  font-weight: bold;
+  color: #222;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: 1;
+  position: relative;
+  z-index: 2;
+}

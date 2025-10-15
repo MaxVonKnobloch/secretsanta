@@ -1,30 +1,87 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import './gift_lists.css';
 
 const GiftListsPage = () => {
-  const [users, setUsers] = useState([]); // [{pk, username, gifts: [{pk, title, created_by_name}]}]
-  const [activeUserPk, setActiveUserPk] = useState(null);
+  const [users, setUsers] = useState([]);
+  const [activeUserIdx, setActiveUserIdx] = useState(0);
+  const touchStartX = useRef(null);
+  const touchEndX = useRef(null);
+  const mouseStartX = useRef(null);
+  const mouseEndX = useRef(null);
+  const listRef = useRef(null);
+  const swipeContainerRef = useRef(null);
 
   useEffect(() => {
     fetch('/api/gift-lists')
       .then(res => res.json())
       .then(data => {
-        console.log('Gift lists API response:', data); // Debug output
         if (Array.isArray(data)) {
           setUsers(data);
-          if (data.length > 0) setActiveUserPk(data[0].pk);
+          setActiveUserIdx(0);
         } else {
           setUsers([]);
         }
       })
-      .catch((err) => {
-        console.error('Error fetching gift lists:', err);
-        setUsers([]);
-      });
+      .catch(() => setUsers([]));
   }, []);
 
-  const handleTabClick = (pk) => {
-    setActiveUserPk(pk);
+  // Swipe gesture handlers
+  const handleTouchStart = (e) => {
+    touchStartX.current = e.touches[0].clientX;
+  };
+  const handleTouchMove = (e) => {
+    touchEndX.current = e.touches[0].clientX;
+  };
+  const handleTouchEnd = () => {
+    if (touchStartX.current === null || touchEndX.current === null) return;
+    const deltaX = touchEndX.current - touchStartX.current;
+    if (Math.abs(deltaX) > 50) {
+      if (deltaX < 0 && activeUserIdx < users.length - 1) {
+        setActiveUserIdx(activeUserIdx + 1);
+        animateSlide('left');
+      } else if (deltaX > 0 && activeUserIdx > 0) {
+        setActiveUserIdx(activeUserIdx - 1);
+        animateSlide('right');
+      }
+    }
+    touchStartX.current = null;
+    touchEndX.current = null;
+  };
+
+  // Mouse gesture handlers for desktop
+  const handleMouseDown = (e) => {
+    mouseStartX.current = e.clientX;
+  };
+  const handleMouseMove = (e) => {
+    if (mouseStartX.current !== null) {
+      mouseEndX.current = e.clientX;
+    }
+  };
+  const handleMouseUp = () => {
+    if (mouseStartX.current === null || mouseEndX.current === null) return;
+    const deltaX = mouseEndX.current - mouseStartX.current;
+    if (Math.abs(deltaX) > 50) {
+      if (deltaX < 0 && activeUserIdx < users.length - 1) {
+        setActiveUserIdx(activeUserIdx + 1);
+        animateSlide('left');
+      } else if (deltaX > 0 && activeUserIdx > 0) {
+        setActiveUserIdx(activeUserIdx - 1);
+        animateSlide('right');
+      }
+    }
+    mouseStartX.current = null;
+    mouseEndX.current = null;
+  };
+
+  // Slide animation
+  const animateSlide = (direction) => {
+    if (!swipeContainerRef.current) return;
+    swipeContainerRef.current.style.transition = 'transform 0.3s ease';
+    swipeContainerRef.current.style.transform = direction === 'left' ? 'translateX(-100vw)' : 'translateX(100vw)';
+    setTimeout(() => {
+      swipeContainerRef.current.style.transition = 'none';
+      swipeContainerRef.current.style.transform = 'translateX(0)';
+    }, 300);
   };
 
   const handleAddGift = (userPk) => {
@@ -45,56 +102,78 @@ const GiftListsPage = () => {
       });
   };
 
-  return (
-    <div className="container">
-      <div className="person-tabs-scroll mb-4">
-        <div className="person-tabs-inner">
-          {(Array.isArray(users) ? users : []).map((user, idx) => (
-            <button
-              key={user.pk}
-              className={`person-tab${idx === 0 ? ' gold-tab' : ''}${activeUserPk === user.pk ? ' active' : ''}`}
-              onClick={() => handleTabClick(user.pk)}
-            >
-              {user.username}
-            </button>
-          ))}
+  // Render user switch bar with partial next/prev names
+  const renderUserSwitchBar = () => {
+    if (users.length === 0) return null;
+    const prevUser = users[activeUserIdx - 1];
+    const activeUser = users[activeUserIdx];
+    const nextUser = users[activeUserIdx + 1];
+    return (
+      <div className="user-switch-bar">
+        <div className="user-switch-bar-inner">
+          <div className="user-switch-half user-switch-prev" style={{opacity: prevUser ? 1 : 0}}>
+            {prevUser ? prevUser.username : ''}
+          </div>
+          <div className="user-switch-center">
+            {activeUser ? activeUser.username : ''}
+          </div>
+          <div className="user-switch-half user-switch-next" style={{opacity: nextUser ? 1 : 0}}>
+            {nextUser ? nextUser.username : ''}
+          </div>
         </div>
       </div>
-      <div className="gift-lists">
-        {(Array.isArray(users) ? users : []).map(user => (
-          <div
-            key={user.pk}
-            className="mb-3 gift-list"
-            data-user-pk={user.pk}
-            style={{ display: activeUserPk === user.pk ? 'block' : 'none' }}
-          >
-            <div className="add-idea-container">
-              <button className="neue-idee-button" onClick={() => handleAddGift(user.pk)}>
-                <span style={{fontWeight: 'bold', fontSize: '1.2em'}}>+</span> Neue Idee
-              </button>
-            </div>
-            <ul className="gift-list-content list-group-flush" id={`gift-list-receiver-${user.pk}`}>
-              {user.gifts && user.gifts.length > 0 ? (
-                user.gifts.map(gift => (
-                  <li className="gift-list-item" key={gift.pk} data-gift-id={gift.pk}>
-                    <div className="gift-list-box" style={{ display: 'flex', flexDirection: 'column', alignItems: 'stretch' }}>
-                      <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span className="gift-title">{gift.title}</span>
+    );
+  };
+
+  const activeUser = users[activeUserIdx];
+
+  return (
+    <div className="container">
+      <div
+        className="swipe-sync-container"
+        ref={swipeContainerRef}
+      >
+        {renderUserSwitchBar()}
+        <div
+          className="gift-lists"
+          ref={listRef}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+        >
+          {activeUser && (
+            <div className="mb-3 gift-list" data-user-pk={activeUser.pk}>
+              <div className="add-idea-container">
+                <button className="neue-idee-button" onClick={() => handleAddGift(activeUser.pk)}>
+                  <span style={{fontWeight: 'bold', fontSize: '1.2em'}}>+</span> Neue Idee
+                </button>
+              </div>
+              <ul className="gift-list-content list-group-flush" id={`gift-list-receiver-${activeUser.pk}`}>
+                {activeUser.gifts && activeUser.gifts.length > 0 ? (
+                  activeUser.gifts.map(gift => (
+                    <li className="gift-list-item" key={gift.pk} data-gift-id={gift.pk}>
+                      <div className="gift-list-box" style={{ display: 'flex', flexDirection: 'column', alignItems: 'stretch' }}>
+                        <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span className="gift-title">{gift.title}</span>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'flex-end', width: '100%' }}>
+                          <span className="gift-creator">{gift.created_by_name ? gift.created_by_name.slice(0,5) : ''}</span>
+                        </div>
                       </div>
-                      <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'flex-end', width: '100%' }}>
-                        <span className="gift-creator">{gift.created_by_name ? gift.created_by_name.slice(0,5) : ''}</span>
-                      </div>
-                    </div>
+                    </li>
+                  ))
+                ) : (
+                  <li className="gift-list-item gift-list-item-empty">
+                    Noch gibt es keine Wünsche für {activeUser.username}.
                   </li>
-                ))
-              ) : (
-                <li className="gift-list-item gift-list-item-empty">
-                  Noch gibt es keine Wünsche für {user.username}.
-                </li>
-              )}
-            </ul>
-          </div>
-        ))}
+                )}
+              </ul>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
