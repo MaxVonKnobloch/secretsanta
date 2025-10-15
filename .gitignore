@@ -1,0 +1,24 @@
+# Global ignores
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
+.env.*
+.idea
+
+# Node
+node_modules/
+build/
+dist/
+
+# Python
+venv/
+*.sqlite3
+*.db
+
+# OS
+.DS_Store
+
+*.db
+old/
