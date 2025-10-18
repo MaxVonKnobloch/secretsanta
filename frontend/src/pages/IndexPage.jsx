@@ -6,6 +6,8 @@ import { fetchJsonSafe } from '../fetchUtils';
 const IndexPage = () => {
   const [cardSlogan, setCardSlogan] = useState('');
   const [giftReceiverName, setGiftReceiverName] = useState('');
+  const [currentUser, setCurrentUser] = useState('');
+  const [receiverImageFailed, setReceiverImageFailed] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -34,6 +36,11 @@ const IndexPage = () => {
       .catch(() => setGiftReceiverName('Error fetching receiver'));
   }, []);
 
+  // reset image-failed flag when receiver changes
+  useEffect(() => {
+    setReceiverImageFailed(false);
+  }, [giftReceiverName]);
+
   useEffect(() => {
     const card = document.querySelector('.static-card');
     if (card) {
@@ -47,6 +54,15 @@ const IndexPage = () => {
     }
   }, [cardSlogan, giftReceiverName]);
 
+  useEffect(() => {
+    const getCurrentUserFromCookie = () => {
+      const match = document.cookie.match(/(?:^|; )APP_USER=([^;]*)/);
+      return match ? decodeURIComponent(match[1]) : null;
+    };
+
+    setCurrentUser(getCurrentUserFromCookie());
+  }, []);
+
   const handleWeiter = () => {
     navigate('/gift-lists');
   };
@@ -55,9 +71,24 @@ const IndexPage = () => {
     <div className="container">
         <div className="static-card">
           <div className="card-slogan">
-            <p className="card-text">{cardSlogan}</p>
+            <p className="card-text">Ho Ho Ho {currentUser}</p>
+            <p className="card-slogan-text">{cardSlogan} dieses Jahr ist:</p>
           </div>
           <div className="card-receiver">
+            {giftReceiverName && !receiverImageFailed && (
+              <img
+                src={`/static/users/${giftReceiverName.toLowerCase()}.png`}
+                alt={giftReceiverName}
+                className="receiver-image"
+                width={80}
+                height={80}
+                onLoad={() => console.log('Receiver image loaded for', giftReceiverName)}
+                onError={(e) => {
+                  console.error('Receiver image failed to load for', giftReceiverName, e);
+                  setReceiverImageFailed(true);
+                }}
+              />
+            )}
             <p className="receiver-name">{giftReceiverName}</p>
           </div>
           <div className="card-button-container">

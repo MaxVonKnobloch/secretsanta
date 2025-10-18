@@ -6,13 +6,13 @@ from starlette.requests import Request
 from starlette.responses import RedirectResponse, JSONResponse
 
 credentials = {
-    "admin": "admin",
-    "max": "max",
-    "anka": "anka",
-    "mama": "mama",
-    "papa": "papa",
-    "katharina": "katharina",
-    "christoph": "christoph"
+    "admin": "5cf4c2e2-3e2b-4d3a-9f4b-8f0e5c6d7a8b",
+    "Max": "theBombastic",
+    "Anka": "NewlyMother",
+    "Roswitha": "helikopter",
+    "Jürgen": "slowAndSteady",
+    "Katharina": "beastOfVulva",
+    "Christoph": "bigPenisPower"
 }
 
 

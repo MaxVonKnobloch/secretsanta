@@ -5,22 +5,39 @@ import random
 
 from fastapi import FastAPI, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
+from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import HTMLResponse
 from fastapi.responses import JSONResponse
+from starlette.staticfiles import StaticFiles
 
+from backend import config
 from backend.auth import token_cookie_guard
 from backend.db import get_db, User, SecretSantaPair, Gift, Vote
-from backend.gifts import get_receiver, get_gift_list, GiftOut, UserGiftList, get_own_gift_list
+from backend.gifts import get_receiver, get_gift_list, GiftOut, UserGiftList, get_own_gift_list, add_or_update_gift
 from pydantic import BaseModel
 from typing import List
-from pathlib import Path
 
 app = FastAPI()
 
 # set loglevel to info
 logging.basicConfig(level=logging.INFO)
 
-base_dir = Path(__file__).parent.parent
+origins = [
+    "http://localhost:3000",
+    "https://localhost:3000"
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# add static for static/preview
+app.mount("/static", StaticFiles(directory=str(config.static.absolute())), name="static")
+
 
 @app.middleware("http")
 async def middleware_wrapper(request: Request, call_next):
@@ -31,11 +48,17 @@ async def middleware_wrapper(request: Request, call_next):
 def read_root():
     return {"message": "Welcome to Secret Santa API"}
 
+
 @app.get("/api/auth")
 def check_auth(request: Request, db: Session = Depends(get_db)):
-    user = get_current_db_user(request, db)
+    try:
+        user = get_current_db_user(request, db)
+    except HTTPException as exc:
+        # ensure frontend receives a JSON object with a success flag and message
+        return JSONResponse(status_code=exc.status_code, content={"success": False, "message": str(exc.detail)})
     logging.info(f"Authenticated user: {user.name}")
-    return JSONResponse(content={"username": user.name})
+    return JSONResponse(content={"success": True, "username": user.name})
+
 
 def get_current_db_user(request: Request, db: Session) -> User:
     """
@@ -80,34 +103,13 @@ def get_gift_lists_for_current_year(request: Request, db: Session = Depends(get_
     for other_user in sorted(other_users, key=lambda u: u.name):
         gift_list = get_gift_list(other_user, db, current_year)
 
+        if other_user.name == user.name:
+            continue
         if other_user.name == gift_receiver_name:
             result.insert(0, gift_list)
         else:
             result.append(gift_list)
     return result
-
-
-# --- Helper and Pydantic models ---
-class GiftCreate(BaseModel):
-    created_for: str  # username instead of id
-    title: str
-    description: str = ""
-    links: str = ""
-
-
-class GiftOut(BaseModel):
-    id: int
-    title: str
-    description: str
-    links: str
-    created_by: str
-    created_for: str
-    created_at: str
-    vote_count: int
-
-
-class GiftUpdate(BaseModel):
-    link: str
 
 
 # --- Slogan endpoint ---
@@ -125,13 +127,12 @@ def get_card_slogan():
         "Dein Plätzchen-Panther",
         "Dein Kranz-Kaptiän"
     ]
-    return {"slogan": random.choice(slogans) + ":"}
+    return {"slogan": random.choice(slogans)}
 
 
 # --- Get gift receiver for current user ---
 @app.get("/api/receiver")
 def get_gift_receiver(request: Request, db: Session = Depends(get_db)):
-    import logging
     logging.info("/receiver endpoint called")
     user_obj = get_current_db_user(request, db)
     logging.info(f"Current user: {getattr(user_obj, 'name', None)}")
@@ -145,34 +146,32 @@ def get_gift_receiver(request: Request, db: Session = Depends(get_db)):
     return {"gift_receiver_name": "?"}
 
 
-# --- Add gift ---
+class GiftCreate(BaseModel):
+    created_for: str  # username instead of id
+    title: str
+    description: str = ""
+    link: str = ""
+
+
 @app.post("/api/gifts/add", response_model=GiftOut)
 def add_gift(gift: GiftCreate, request: Request, db: Session = Depends(get_db)):
     user_obj = get_current_db_user(request, db)
     created_for_user = db.query(User).filter_by(name=gift.created_for).first()
     if not created_for_user:
         raise HTTPException(status_code=404, detail="User not found")
-    new_gift = Gift(
+
+    return add_or_update_gift(
+        db=db,
         title=gift.title,
-        description=gift.description,
-        links=gift.links,
-        year=datetime.datetime.now().year,
         created_by=user_obj,
-        created_for=created_for_user
+        created_for=created_for_user,
+        link=gift.link
     )
-    db.add(new_gift)
-    db.commit()
-    db.refresh(new_gift)
-    return GiftOut(
-        id=new_gift.id,
-        title=new_gift.title,
-        description=new_gift.description,
-        links=new_gift.links,
-        created_by=new_gift.created_by.name if new_gift.created_by else "",
-        created_for=new_gift.created_for.name if new_gift.created_for else "",
-        created_at=str(datetime.datetime.now()),
-        vote_count=0
-    )
+
+
+class GiftUpdate(BaseModel):
+    title: str
+    link: str
 
 
 @app.patch("/api/gifts/{gift_id}", response_model=GiftOut)
@@ -183,21 +182,14 @@ def update_gift(gift_id: int, update: GiftUpdate, request: Request, db: Session 
         raise HTTPException(status_code=404, detail="Gift not found")
     if gift.created_by != user_obj:
         raise HTTPException(status_code=403, detail="Not allowed")
-    if update.link and update.link.startswith(("http://", "https://")):
-        gift.links = update.link
-    else:
-        gift.links = ""
-    db.commit()
-    db.refresh(gift)
-    return GiftOut(
-        id=gift.id,
-        title=gift.title,
-        description=gift.description,
-        links=gift.links,
-        created_by=gift.created_by.name if gift.created_by else "",
-        created_for=gift.created_for.name if gift.created_for else "",
-        created_at=str(gift.year),
-        vote_count=0
+
+    return add_or_update_gift(
+        db=db,
+        gift_pk=gift_id,
+        title=update.title,
+        created_by=gift.created_by,
+        created_for=gift.created_for,
+        link=update.link
     )
 
 
@@ -300,10 +292,3 @@ def create_secret_santa_pairs(members: list, non_matches: dict):
         pairs[giver] = receiver
         available.remove(receiver)
     return pairs
-
-
-@app.get("/{full_path:path}")
-async def spa_catch_all(full_path: str):
-    if not full_path.startswith("api/"):
-        return FileResponse(base_dir / "frontend" / "build" / "index.html")
-    raise HTTPException(status_code=404, detail="Not Found")

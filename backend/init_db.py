@@ -1,10 +1,9 @@
 # Script to initialize the database and add the admin user
 import datetime
 
-from backend.db import User, get_db, Base, DATABASE_URL, SecretSantaPair
+from backend.db import User, Base, DATABASE_URL, SecretSantaPair
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-import os
 
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
@@ -29,12 +28,12 @@ def add_admin():
 
 def add_dummy_user():
     users = [
-        "max",
-        "anka",
-        "mama",
-        "papa",
-        "katharina",
-        "christoph"
+        "Max",
+        "Anka",
+        "Roswitha",
+        "Jürgen",
+        "Katharina",
+        "Christoph"
     ]
     db = SessionLocal()
     for username in users:
@@ -87,44 +86,44 @@ def init_gifts():
         {
             "title": "Lego Set",
             "description": "A cool Lego set for building fun.",
-            "links": "https://www.lego.com/en-us/product/lego-city-police-station-60246",
-            "created_by_name": "max",
-            "created_for_name": "anka"
+            "link": "https://www.lego.com/en-us/product/lego-city-police-station-60246",
+            "created_by_name": "Max",
+            "created_for_name": "Anka"
         },
         {
             "title": "Cookbook",
             "description": "A cookbook with delicious recipes.",
-            "links": "https://www.amazon.com/dp/198482218X",
-            "created_by_name": "anka",
-            "created_for_name": "max"
+            "link": "https://www.amazon.com/dp/198482218X",
+            "created_by_name": "Anka",
+            "created_for_name": "Max"
         },
         {
             "title": "Board Game",
             "description": "A fun board game for family nights.",
-            "links": "https://www.amazon.com/dp/B00J4E8KX2",
-            "created_by_name": "mama",
-            "created_for_name": "papa"
+            "link": "https://www.amazon.com/dp/B00J4E8KX2",
+            "created_by_name": "Roswitha",
+            "created_for_name": "Jürgen"
         },
         {
             "title": "Wireless Headphones",
             "description": "Noise-cancelling wireless headphones.",
-            "links": "https://www.amazon.com/dp/B07Y2ZQ3M3",
-            "created_by_name": "papa",
-            "created_for_name": "mama"
+            "link": "https://www.amazon.com/dp/B07Y2ZQ3M3",
+            "created_by_name": "Jürgen",
+            "created_for_name": "Roswitha"
         },
         {
             "title": "Yoga Mat",
             "description": "A comfortable yoga mat for daily practice.",
-            "links": "https://www.amazon.com/dp/B01N6S4A2M",
-            "created_by_name": "katharina",
-            "created_for_name": "christoph"
+            "link": "https://www.amazon.com/dp/B01N6S4A2M",
+            "created_by_name": "Katharina",
+            "created_for_name": "Christoph"
         },
         {
             "title": "Travel Mug",
             "description": "A stainless steel travel mug.",
-            "links": "https://www.amazon.com/dp/B01N5IB20Q",
-            "created_by_name": "christoph",
-            "created_for_name": "katharina"
+            "link": "https://www.amazon.com/dp/B01N5IB20Q",
+            "created_by_name": "Christoph",
+            "created_for_name": "Katharina"
         }
     ]
     year = datetime.datetime.now().year
@@ -142,7 +141,7 @@ def init_gifts():
                 gift = Gift(
                     title=gift_data["title"],
                     description=gift_data["description"],
-                    links=gift_data["links"],
+                    link=gift_data["link"],
                     created_by_id=created_by.id,
                     created_for_id=created_for.id,
                     year=year

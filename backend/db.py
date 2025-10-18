@@ -1,11 +1,11 @@
 # SQLAlchemy setup and models for Secret Santa
 from fastapi import HTTPException
-from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, Boolean, DateTime, Table
+from sqlalchemy import create_engine, Column, Integer, String, ForeignKey
 from sqlalchemy.orm import sessionmaker, declarative_base, relationship, Session
 from starlette.requests import Request
-from pathlib import Path
 
-db_path = Path(__file__).parent.parent / "secretsanta.db"
+from backend.config import db_path
+
 DATABASE_URL = f"sqlite:///{db_path}"
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
@@ -43,7 +43,8 @@ class Gift(Base):
     id = Column(Integer, primary_key=True, index=True)
     title = Column(String(200), nullable=False)
     description = Column(String, nullable=True)
-    links = Column(String, nullable=True)  # Comma-separated links
+    link = Column(String, nullable=True)
+    preview_image_path = Column(String, nullable=True)
     year = Column(Integer, nullable=False)
     created_by_id = Column(Integer, ForeignKey("users.id"))
     created_for_id = Column(Integer, ForeignKey("users.id"))
