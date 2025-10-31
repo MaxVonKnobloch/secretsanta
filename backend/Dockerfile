@@ -17,7 +17,8 @@ COPY backend /app/backend
 WORKDIR /app/backend
 RUN pip install --upgrade pip setuptools wheel \
     && pip install uv \
-    && uv pip install --system -r <(uv pip compile pyproject.toml)
+    && uv pip compile pyproject.toml > /tmp/requirements.txt \
+    && uv pip install --system -r /tmp/requirements.txt
 
 # Initialize the database
 WORKDIR /app
