@@ -20,6 +20,9 @@ RUN pip install --upgrade pip setuptools wheel \
     && uv pip compile pyproject.toml > /tmp/requirements.txt \
     && uv pip install --system -r /tmp/requirements.txt
 
+# Add backend to PYTHONPATH so backend package can be imported
+ENV PYTHONPATH=/app:$PYTHONPATH
+
 # Initialize the database
 WORKDIR /app
 RUN python backend/init_db.py
