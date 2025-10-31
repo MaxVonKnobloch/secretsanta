@@ -13,14 +13,18 @@ WORKDIR /app
 # Copy only backend sources (put them under /app/backend so uv can run inside that folder)
 COPY backend /app/backend
 
-# Install Python tooling and use `uv` to sync dependencies from pyproject/uv.lock
+# Install Python tooling and dependencies into global Python environment
 WORKDIR /app/backend
 RUN pip install --upgrade pip setuptools wheel \
     && pip install uv \
-    && uv sync
+    && uv pip install --system -r <(uv pip compile pyproject.toml)
+
+# Initialize the database
+WORKDIR /app
+RUN python backend/init_db.py
 
 EXPOSE 8000
 
-# Run uvicorn from /app using uv run (uvicorn is installed via uv sync from pyproject.toml)
+# Run uvicorn directly (now available in global Python environment)
 WORKDIR /app
-CMD ["uv", "run", "uvicorn", "backend.app:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+CMD ["uvicorn", "backend.app:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
