@@ -239,56 +239,20 @@ def vote_gift(gift_id: int, vote: VoteRequest, request: Request, db: Session = D
 
 
 @app.get("/api/pairing")
-def pair_create_view(request: Request, db: Session = Depends(get_db)):
-    if not request.state.get("is_superuser", False):
-        raise HTTPException(status_code=403, detail="Forbidden")
-    groups = db.query(SecretSantaGroup).all()
-    group_info = {}
-    for group in groups:
-        members = db.query(User).join(GroupMember, GroupMember.user_id == User.id).filter(
-            GroupMember.group_id == group.id).all()
-        group_info[group.id] = {
-            "members": [u.name for u in members],
-            "name": group.name
-        }
-    return {"group_info": group_info}
-
-
-class PairingRequest(BaseModel):
-    user_non_matches: dict
-
-
-@app.post("/api/pairing/{group_id}")
-def create_new_pairs(group_id: int, pairing: PairingRequest, db: Session = Depends(get_db)):
-    if not is_superuser():
-        raise HTTPException(status_code=403, detail="Forbidden")
-    group = db.query(SecretSantaGroup).filter_by(id=group_id).first()
-    if not group:
-        raise HTTPException(status_code=404, detail="Group not found")
-    members = db.query(User).join(SecretSantaGroup.members).filter(SecretSantaGroup.id == group_id).all()
-    usernames = [u.name for u in members]
-    pairing_result = create_secret_santa_pairs(usernames, pairing.user_non_matches)
-    if pairing_result is None:
-        raise HTTPException(status_code=400, detail="Pairing failed")
-    db.query(SecretSantaPair).filter_by(group=group).delete()
-    for giver_name, receiver_name in pairing_result.items():
-        giver = db.query(User).filter_by(name=giver_name).first()
-        receiver = db.query(User).filter_by(name=receiver_name).first()
-        db.add(SecretSantaPair(giver=giver, receiver=receiver, group=group, year=datetime.datetime.now().year))
-    db.commit()
-    return {"success": True}
-
-
-def create_secret_santa_pairs(members: list, non_matches: dict):
-    # Simple random pairing, avoiding non-matches
-    import random
-    available = set(members)
-    pairs = {}
-    for giver in members:
-        possible = [r for r in available if r != giver and r not in non_matches.get(giver, [])]
-        if not possible:
-            return None
-        receiver = random.choice(possible)
-        pairs[giver] = receiver
-        available.remove(receiver)
-    return pairs
+def show_current_pairing(request: Request, db: Session = Depends(get_db)):
+    """
+    Show the current pairing for all users.
+    :param request:
+    :param db:
+    :return:
+    """
+    pairings = SecretSantaPair.query.filter_by(year=datetime.datetime.now().year).all()
+    result = []
+    for pairing in pairings:
+        giver = db.query(User).filter_by(id=pairing.giver_id).first()
+        receiver = db.query(User).filter_by(id=pairing.receiver_id).first()
+        result.append({
+            "giver": giver.name,
+            "receiver": receiver.name
+        })
+    return result
