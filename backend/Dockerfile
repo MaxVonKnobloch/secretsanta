@@ -17,11 +17,10 @@ COPY backend /app/backend
 WORKDIR /app/backend
 RUN pip install --upgrade pip setuptools wheel \
     && pip install uv \
-    && uv sync \
-    && pip install -e .
+    && uv sync
 
 EXPOSE 8000
 
-# Run uvicorn from /app so the package 'backend' can be imported (as /app/backend)
+# Run uvicorn from /app using uv run (uvicorn is installed via uv sync from pyproject.toml)
 WORKDIR /app
-CMD ["uvicorn", "backend.app:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+CMD ["uv", "run", "uvicorn", "backend.app:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
