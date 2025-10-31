@@ -17,7 +17,8 @@ COPY backend /app/backend
 WORKDIR /app/backend
 RUN pip install --upgrade pip setuptools wheel \
     && pip install uv \
-    && uv sync
+    && uv sync \
+    && pip install -e .
 
 EXPOSE 8000
 
