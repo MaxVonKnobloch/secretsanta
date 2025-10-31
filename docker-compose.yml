@@ -12,7 +12,7 @@ services:
     volumes:
       - ./backend:/app/backend:delegated
       - ./static:/app/static:delegated
-      - ./secretsanta.db:/app/secretsanta.db
+      - secretsanta_db:/app/db
     environment:
       - PYTHONUNBUFFERED=1
     healthcheck:
@@ -20,3 +20,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
+
+volumes:
+  secretsanta_db:
+    driver: local
