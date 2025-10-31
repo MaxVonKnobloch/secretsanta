@@ -17,7 +17,7 @@ def get_last_year_pairs(db, year: int):
     return db.query(SecretSantaPair).filter(SecretSantaPair.year == year).all()
 
 
-def create_secret_santa_pairs(db):
+def create_secret_santa_pairs(db, allow_last_year_pairing: bool = False, allow_vice_versa: bool = False):
     """
     This function gets all users that are not admin and creates secret santa pairs for them,
     ensuring that no user is paired with themselves or with users in their forbidden list or with the same user as last year.
@@ -43,12 +43,18 @@ def create_secret_santa_pairs(db):
         valid = True
         pairs = {}
         for giver_name, receiver_name in zip(user_names, shuffled_names):
-            if (
-                giver_name == receiver_name or
-                receiver_name in forbidden_combinations.get(giver_name, []) or
-                last_year_dict.get(giver_name) == receiver_name
-            ):
+            if giver_name == receiver_name:
                 valid = False
+            if receiver_name in forbidden_combinations.get(giver_name, []):
+                valid = False
+
+            if not allow_last_year_pairing and last_year_dict.get(giver_name) == receiver_name:
+                valid = False
+
+            if not allow_vice_versa and pairs.get(receiver_name) == giver_name:
+                valid = False
+
+            if not valid:
                 break
             pairs[giver_name] = receiver_name
 
@@ -59,7 +65,7 @@ def create_secret_santa_pairs(db):
                 pair = SecretSantaPair(giver_id=giver.id, receiver_id=receiver.id, year=current_year)
                 db.add(pair)
             db.commit()
-            print("Secret Santa pairs created successfully.")
+            print(f"Secret Santa pairs created successfully on try {attempts}")
             return
 
     print("Failed to create valid Secret Santa pairs after multiple attempts.")

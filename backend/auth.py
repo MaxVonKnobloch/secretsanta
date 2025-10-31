@@ -1,4 +1,5 @@
 import logging
+from multiprocessing.util import MAXFD
 from typing import Optional
 
 from fastapi import HTTPException
@@ -7,14 +8,13 @@ from starlette.responses import RedirectResponse, JSONResponse
 
 credentials = {
     "admin": "5cf4c2e2-3e2b-4d3a-9f4b-8f0e5c6d7a8b",
-    "Max": "theBombastic",
-    "Anka": "NewlyMother",
-    "Roswitha": "helikopter",
-    "Jürgen": "slowAndSteady",
-    "Katharina": "beastOfVulva",
-    "Christoph": "bigPenisPower"
+    "Max": "numberone",
+    "Anka": "sweety",
+    "Roswitha": "bigMama",
+    "Jürgen": "daddyCool",
+    "Katharina": "mostlyNaked",
+    "Christoph": "bigDickEnergy"
 }
-
 
 def get_token_user(token: str) -> Optional[str]:
     """Return the user associated with the given token, or None if not found."""

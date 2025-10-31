@@ -1,0 +1,22 @@
+version: "3.8"
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: secretsanta-backend
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - ./backend:/app/backend:delegated
+      - ./static:/app/static:delegated
+      - ./secretsanta.db:/app/secretsanta.db
+    environment:
+      - PYTHONUNBUFFERED=1
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:8000/api/healthcheck"]
+      interval: 30s
+      timeout: 10s
+      retries: 5

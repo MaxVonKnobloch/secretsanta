@@ -5,6 +5,8 @@ from backend.db import User, Base, DATABASE_URL, SecretSantaPair
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
+from backend.pairing import create_secret_santa_pairs
+
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
@@ -26,7 +28,7 @@ def add_admin():
     db.close()
 
 
-def add_dummy_user():
+def add_users():
     users = [
         "Max",
         "Anka",
@@ -51,14 +53,20 @@ def add_dummy_user():
 def add_pairing():
     # create 3 pairs out of the 6 users
     db = SessionLocal()
-    users = db.query(User).filter(User.name != "admin").all()
-    pairs = [
-        (users[0], users[1]),
-        (users[2], users[3]),
-        (users[4], users[5]),
-    ]
-    year = datetime.datetime.now().year
-    for giver, receiver in pairs:
+    pairings = {
+        "Max": "Katharina",
+        "Katharina": "Jürgen",
+        "Roswitha": "Max",
+        "Jürgen": "Christoph",
+        "Anka": "Roswitha",
+        "Christoph": "Anka"
+    }
+
+    year = "2024"
+    for giver_name, receiver_name in pairings.items():
+        giver = db.query(User).filter_by(name=giver_name).first()
+        receiver = db.query(User).filter_by(name=receiver_name).first()
+
         existing_pair = db.query(SecretSantaPair).filter_by(giver_id=giver.id, year=year).first()
         if not existing_pair:
             pair = SecretSantaPair(giver_id=giver.id, receiver_id=receiver.id, year=year)
@@ -77,6 +85,8 @@ def add_pairing():
             print(f"Pair for giver '{receiver.name}' already exists.")
     db.commit()
     db.close()
+
+    create_secret_santa_pairs(db=db)
 
 
 def init_gifts():
@@ -158,6 +168,6 @@ def init_gifts():
 
 if __name__ == "__main__":
     add_admin()
-    add_dummy_user()
+    add_users()
     add_pairing()
-    init_gifts()
+    #init_gifts()
