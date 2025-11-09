@@ -12,7 +12,7 @@ services:
     volumes:
       - ./backend:/app/backend:delegated
       - ./static:/app/static:delegated
-      - secretsanta_db:/app/db
+      - ./db:/app/db
     environment:
       - PYTHONUNBUFFERED=1
     healthcheck:
