@@ -77,7 +77,7 @@ def add_pairing(pairings: dict, year: str):
     db.commit()
     db.close()
 
-    create_secret_santa_pairs(db=db)
+    # create_secret_santa_pairs(db=db)
 
 
 def init_gifts():

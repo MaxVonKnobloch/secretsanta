@@ -25,7 +25,7 @@ ENV PYTHONPATH=/app:$PYTHONPATH
 
 # Initialize the database
 WORKDIR /app
-RUN python backend/init_db.py
+RUN uv run python backend/init_db.py
 
 EXPOSE 8000
 
