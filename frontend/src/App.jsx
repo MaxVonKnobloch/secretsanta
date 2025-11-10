@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import IndexPage from './pages/IndexPage';
 import GiftListsPage from './pages/GiftListsPage';
 
@@ -19,13 +19,14 @@ const App = () => {
   }, []);
 
   return (
-    <Router>
+    <BrowserRouter basename="/secretsanta">
       <Routes>
         <Route path="/" element={<IndexPage />} />
         <Route path="/gift-lists" element={<GiftListsPage />} />
-        {/* Add more routes here as needed */}
+        {/* Catch-all fallback */}
+        <Route path="*" element={<div>Not Found</div>} />
       </Routes>
-    </Router>
+    </BrowserRouter>
   );
 };
 

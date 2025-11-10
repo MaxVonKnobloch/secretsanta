@@ -15,7 +15,7 @@ const IndexPage = () => {
     const urlParams = new URLSearchParams(window.location.search);
     const token = urlParams.get('token');
     if (token) {
-      fetchJsonSafe(`/api/auth?token=${encodeURIComponent(token)}`)
+      fetchJsonSafe(`./api/auth?token=${encodeURIComponent(token)}`)
         .then(data => {
           if (!data.success) {
             console.error('Auth failed:', data.message);
@@ -28,10 +28,10 @@ const IndexPage = () => {
       console.warn('No token found in URL parameters.');
     }
     // --- END AUTH REQUEST ---
-    fetchJsonSafe('/api/slogan')
+    fetchJsonSafe('./api/slogan')
       .then(data => setCardSlogan(data.slogan || ''))
       .catch(() => setCardSlogan('Error fetching slogan'));
-    fetchJsonSafe('/api/receiver')
+    fetchJsonSafe('./api/receiver')
       .then(data => setGiftReceiverName(data.gift_receiver_name || '?'))
       .catch(() => setGiftReceiverName('Error fetching receiver'));
   }, []);
@@ -64,7 +64,7 @@ const IndexPage = () => {
   }, []);
 
   const handleWeiter = () => {
-    navigate('/gift-lists');
+    navigate('./gift-lists');
   };
 
   return (
@@ -77,7 +77,7 @@ const IndexPage = () => {
           <div className="card-receiver">
             {giftReceiverName && !receiverImageFailed && (
               <img
-                src={`/static/users/${giftReceiverName.toLowerCase()}.png`}
+                src={`./static/users/${giftReceiverName.toLowerCase()}.png`}
                 alt={giftReceiverName}
                 className="receiver-image"
                 width={80}

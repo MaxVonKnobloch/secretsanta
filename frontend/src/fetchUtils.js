@@ -1,14 +1,23 @@
-// Utility function for safe JSON fetch
+// Utility function for safe JSON fetch under /secretsanta
 export async function fetchJsonSafe(url, options = {}) {
+  // normalize URLs: make /api/... → /secretsanta/api/...
+  const normalizeUrl = (u) => {
+    if (!u) return '/secretsanta/api';
+    if (/^https?:\/\//i.test(u)) return u; // already absolute
+    if (u.startsWith('/api/')) return '/secretsanta' + u;
+    if (u.startsWith('api/')) return '/secretsanta/' + u;
+    return u;
+  };
+
+  const finalUrl = normalizeUrl(url);
+
   const defaultOptions = {
-    // include cookies for cross-origin requests (frontend <-> backend on different ports)
     credentials: 'include',
     headers: {
-      'Accept': 'application/json',
+      Accept: 'application/json',
     },
   };
 
-  // Merge headers correctly (preserve any headers passed in options)
   const mergedOptions = {
     ...defaultOptions,
     ...options,
@@ -18,24 +27,21 @@ export async function fetchJsonSafe(url, options = {}) {
     },
   };
 
-  const res = await fetch(url, mergedOptions);
+  const res = await fetch(finalUrl, mergedOptions);
   const contentType = res.headers.get('content-type') || '';
   const isJson = contentType.includes('application/json');
 
-  // Try to parse JSON if present
   let parsed = null;
   if (isJson) {
     try {
       parsed = await res.json();
-    } catch (err) {
-      // fall through; parsed remains null
+    } catch {
+      // ignore parse error
     }
   }
 
   if (!res.ok) {
-    // If the server returned JSON error body, return it so callers can inspect {success:false,...}
     if (isJson && parsed !== null) return parsed;
-    // Otherwise throw so callers can catch a network-like error
     throw new Error(`Network error: ${res.status}`);
   }
 

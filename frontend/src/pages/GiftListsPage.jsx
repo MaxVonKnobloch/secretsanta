@@ -18,7 +18,7 @@ const GiftListsPage = () => {
   const swipeContainerRef = useRef(null);
 
   useEffect(() => {
-    fetch('/api/gift-lists')
+    fetch('./api/gift-lists')
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) {
@@ -113,7 +113,7 @@ const GiftListsPage = () => {
 
   const handleAddGiftSubmit = (userPk, userName) => {
     if (!popupTitle.trim()) return;
-    fetch('/api/gifts/add', {
+    fetch('./api/gifts/add', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ created_for: userName, title: popupTitle, description: '', links: popupLink })
@@ -143,7 +143,7 @@ const GiftListsPage = () => {
 
   const handleDeleteGiftSubmit = () => {
     if (!editGift) return;
-    fetch(`/api/gifts/${editGift.pk}`, {
+    fetch(`./api/gifts/${editGift.pk}`, {
         method: 'DELETE'
         })
         .then(res => {
@@ -161,7 +161,7 @@ const GiftListsPage = () => {
 
   const handleEditGiftSubmit = () => {
     if (!editGift || !editTitle.trim()) return;
-    fetch(`/api/gifts/${editGift.pk}`, {
+    fetch(`./api/gifts/${editGift.pk}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ title: editTitle, link: editLink })
@@ -239,13 +239,13 @@ const GiftListsPage = () => {
                       <div className="gift-list-box">
                         <div className="gift-main-row">
                           <img
-                            src={gift.preview_image_path || "/static/previews/default_preview.png"}
+                            src={gift.preview_image_path || "./static/previews/default_preview.png"}
                             alt={gift.title}
                             className="gift-preview-image"
                             onClick={e => e.stopPropagation()}
                             onError={e => {
                               if (e.target.dataset.fallback !== "true") {
-                                e.target.src = "/static/previews/default_preview.png";
+                                e.target.src = "./static/previews/default_preview.png";
                                 e.target.dataset.fallback = "true";
                               }
                             }}
