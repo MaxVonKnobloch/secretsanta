@@ -50,19 +50,10 @@ def add_users():
     db.close()
 
 
-def add_pairing():
+def add_pairing(pairings: dict, year: str):
     # create 3 pairs out of the 6 users
     db = SessionLocal()
-    pairings = {
-        "Max": "Katharina",
-        "Katharina": "Jürgen",
-        "Roswitha": "Max",
-        "Jürgen": "Christoph",
-        "Anka": "Roswitha",
-        "Christoph": "Anka"
-    }
 
-    year = "2024"
     for giver_name, receiver_name in pairings.items():
         giver = db.query(User).filter_by(name=giver_name).first()
         receiver = db.query(User).filter_by(name=receiver_name).first()
@@ -169,5 +160,20 @@ def init_gifts():
 if __name__ == "__main__":
     add_admin()
     add_users()
-    add_pairing()
+    add_pairing(year="2024", pairings={
+            "Max": "Katharina",
+            "Katharina": "Jürgen",
+            "Roswitha": "Max",
+            "Jürgen": "Christoph",
+            "Anka": "Roswitha",
+            "Christoph": "Anka"
+        })
+    add_pairing(year="2025", pairings={
+        "Max": "Jürgen",
+        "Katharina": "Roswitha",
+        "Roswitha": "Christoph",
+        "Jürgen": "Anka",
+        "Anka": "Katharina",
+        "Christoph": "Max"
+    })
     #init_gifts()
