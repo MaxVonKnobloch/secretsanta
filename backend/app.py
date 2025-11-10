@@ -135,10 +135,13 @@ def get_card_slogan():
 def get_gift_receiver(request: Request, db: Session = Depends(get_db)):
     logging.info("/receiver endpoint called")
     user_obj = get_current_db_user(request, db)
-    logging.info(f"Current user: {getattr(user_obj, 'name', None)}")
     current_year = datetime.datetime.now().year
-    pair = db.query(SecretSantaPair).filter_by(giver_id=user_obj.id, year=current_year).first()
-    if pair:
+    logging.info(f"Current user: {getattr(user_obj, 'name', None)}, current year: {current_year}")
+    pairs = db.query(SecretSantaPair).filter_by(giver_id=user_obj.id, year=current_year).all()
+    logging.info(f"Found {len(pairs)} pairs with users: {[(pair.giver_id, pair.receiver_id, pair.year) for pair in pairs]}")
+
+    if pairs:
+        pair = pairs[0]
         receiver = db.query(User).filter_by(id=pair.receiver_id).first()
         logging.info(f"Receiver found: {getattr(receiver, 'name', None)}")
         return {"gift_receiver_name": receiver.name}
