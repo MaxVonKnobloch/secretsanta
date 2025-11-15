@@ -71,8 +71,8 @@ def download_and_save_image(img_url: str, fallback_name: str = 'preview_image') 
         image = Image.open(BytesIO(img_response.content))
         parsed_url = urlparse(img_url)
         # Always use .png extension for consistency
-        base_name = Path(parsed_url.path).stem or fallback_name
-        filename = f"{base_name}.png"
+        # random number as filename:
+        filename = f"{random.randint(1000, 9999)}.png"
         local_path = config.previews / filename
         local_path.parent.mkdir(parents=True, exist_ok=True)
         # Convert to RGB if needed (e.g., for JPEG or palette images)
