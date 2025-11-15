@@ -11,7 +11,7 @@ services:
       - "127.0.0.1:8000:8000"
     volumes:
       - ./backend:/app/backend:delegated
-      - ./static:/app/static:delegated
+      - /var/www/secretsanta/static:/app/static:delegated
       - ./db:/app/db
     environment:
       - PYTHONUNBUFFERED=1
