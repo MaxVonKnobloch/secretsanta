@@ -92,6 +92,7 @@ def preview_external_links(link: str) -> str:
     Fetches a preview image from the external link (Open Graph, Twitter Card, favicon, or direct image),
     stores it locally, and returns the path to the stored image.
     """
+    logging.info(f"Fetching link preview for: {link}")
     response = fetch_url_content(link)
     img_path = None
     if not response:

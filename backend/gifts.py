@@ -1,4 +1,5 @@
 import datetime
+import logging
 
 from backend import config
 from backend.db import User, SecretSantaPair, Gift, Vote
@@ -116,8 +117,10 @@ def add_or_update_gift(db: Session,
         gift.created_for_id = created_for.id
 
     if gift.link:
+        logging.info(f"Generating preview for link: {gift.link}")
         gift.preview_image_path = preview_external_links(gift.link)
     else:
+        logging.info("No link provided, using default preview image.")
         gift.preview_image_path = config.default_preview_image_path
 
     if is_new_gift:
