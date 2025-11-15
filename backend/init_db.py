@@ -62,14 +62,12 @@ def add_pairing(pairings: dict, year: str):
         if not existing_pair:
             pair = SecretSantaPair(giver_id=giver.id, receiver_id=receiver.id, year=year)
             db.add(pair)
-            print(f"Pair ({giver.name} -> {receiver.name}) created.")
+            print(f"Pair ({giver.name} -> {receiver.name}) created for year {year}.")
         else:
-            print(f"Pair for giver '{giver.name}' already exists.")
+            print(f"Pair for giver '{giver.name}' and year {year} already exists with receiver {pair.receiver_id}")
 
     db.commit()
     db.close()
-
-    # create_secret_santa_pairs(db=db)
 
 
 def init_gifts():

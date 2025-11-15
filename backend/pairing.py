@@ -62,6 +62,7 @@ def create_secret_santa_pairs(db, allow_last_year_pairing: bool = False, allow_v
             for giver_name, receiver_name in pairs.items():
                 giver = name_to_user[giver_name]
                 receiver = name_to_user[receiver_name]
+                print(giver.name, "gets", receiver.name)
                 pair = SecretSantaPair(giver_id=giver.id, receiver_id=receiver.id, year=current_year)
                 db.add(pair)
             db.commit()
